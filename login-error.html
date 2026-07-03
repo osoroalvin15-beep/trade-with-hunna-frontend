@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login error &mdash; Trade With Hunna</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="top wrap">
+  <a class="mark" href="/"><span class="dot"></span> Trade With Hunna</a>
+</header>
+
+<main>
+  <div class="wrap">
+    <div class="panel state-error">
+      <div class="status-row"><span class="dot"></span> Login failed</div>
+      <h2>Something went wrong</h2>
+      <p id="message">We couldn't complete the login with Deriv.</p>
+      <div><a class="btn btn-primary" href="https://trade-with-hunna-backend.onrender.com/login">Try again</a></div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Trade With Hunna</span>
+    <span>Powered by the Deriv API</span>
+  </div>
+</footer>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const reason = params.get('reason');
+  const reasons = {
+    missing_params: "The login link was missing information it needed.",
+    unknown_or_expired_state: "That login attempt expired. Please try again.",
+    token_exchange_failed: "Deriv couldn't confirm your login. Please try again.",
+    invalid_scope: "There's a configuration issue with this app. Please contact support.",
+    access_denied: "Access was denied by Deriv.",
+    server_error: "Something went wrong on our end.",
+  };
+  if (reason && reasons[reason]) {
+    document.getElementById('message').textContent = reasons[reason];
+  }
+</script>
+
+</body>
+</html>

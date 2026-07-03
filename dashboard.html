@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard &mdash; Trade With Hunna</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="top wrap">
+  <a class="mark" href="/"><span class="dot"></span> Trade With Hunna</a>
+</header>
+
+<main>
+  <div class="wrap">
+    <div class="panel state-loading" id="panel">
+      <div class="status-row"><span class="dot"></span> <span id="status-label">Checking session</span></div>
+      <h2 id="title">One moment</h2>
+      <p id="message">Confirming your login with the server.</p>
+      <div id="action"></div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Trade With Hunna</span>
+    <span>Powered by the Deriv API</span>
+  </div>
+</footer>
+
+<script>
+  const BACKEND_URL = 'https://trade-with-hunna-backend.onrender.com';
+  const panel = document.getElementById('panel');
+  const statusLabel = document.getElementById('status-label');
+  const title = document.getElementById('title');
+  const message = document.getElementById('message');
+  const action = document.getElementById('action');
+
+  function showLoggedIn() {
+    panel.className = 'panel';
+    statusLabel.textContent = 'Logged in';
+    title.textContent = "You're in.";
+    message.textContent = 'Your Deriv account is connected. Trading tools land here next.';
+    action.innerHTML = '<a class="btn btn-ghost" href="#" id="logout-link">Log out</a>';
+    document.getElementById('logout-link').addEventListener('click', async (e) => {
+      e.preventDefault();
+      await fetch(`${BACKEND_URL}/logout`, { method: 'POST', credentials: 'include' });
+      window.location.href = '/';
+    });
+  }
+
+  function showLoggedOut() {
+    panel.className = 'panel state-error';
+    statusLabel.textContent = 'Not logged in';
+    title.textContent = 'Session not found';
+    message.textContent = "We couldn't confirm a login. Try logging in again.";
+    action.innerHTML = `<a class="btn btn-primary" href="${BACKEND_URL}/login">Log in with Deriv</a>`;
+  }
+
+  fetch(`${BACKEND_URL}/me`, { credentials: 'include' })
+    .then((res) => res.json())
+    .then((data) => {
+      if (data.loggedIn) {
+        showLoggedIn();
+      } else {
+        showLoggedOut();
+      }
+    })
+    .catch(() => showLoggedOut());
+</script>
+
+</body>
+</html>

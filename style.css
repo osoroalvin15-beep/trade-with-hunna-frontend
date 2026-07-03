@@ -1,0 +1,232 @@
+:root {
+  --ink: #0B1210;
+  --paper: #F6F5F1;
+  --line: #D8D6CE;
+  --signal: #1F7A5C;
+  --signal-dim: #16513E;
+  --loss: #B4432E;
+  --mono: 'IBM Plex Mono', 'SF Mono', Menlo, monospace;
+  --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+a { color: inherit; }
+
+.wrap {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 24px;
+  width: 100%;
+}
+
+header.top {
+  padding: 28px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mark {
+  font-family: var(--mono);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--paper);
+  text-decoration: none;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.mark .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--signal);
+  display: inline-block;
+}
+
+main { flex: 1; display: flex; align-items: center; }
+
+.hero {
+  padding: 80px 0 100px;
+}
+
+.ticker {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--signal);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 28px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ticker::before {
+  content: '';
+  width: 18px;
+  height: 1px;
+  background: var(--signal);
+  display: inline-block;
+}
+
+h1 {
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: clamp(40px, 6vw, 68px);
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  margin: 0 0 24px;
+  max-width: 780px;
+}
+
+h1 em {
+  font-style: normal;
+  color: var(--signal);
+}
+
+.sub {
+  font-size: 18px;
+  line-height: 1.55;
+  color: #B9B6AC;
+  max-width: 480px;
+  margin: 0 0 44px;
+}
+
+.cta-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 16px;
+  padding: 16px 28px;
+  border-radius: 3px;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.btn-primary {
+  background: var(--signal);
+  color: #061109;
+}
+.btn-primary:hover { background: #26946E; transform: translateY(-1px); }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--paper);
+  border: 1px solid var(--line);
+}
+.btn-ghost:hover { border-color: var(--paper); }
+
+.fine {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: #7A776C;
+  margin-top: 18px;
+}
+
+footer {
+  border-top: 1px solid #1B241F;
+  padding: 22px 0;
+}
+
+footer .wrap {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: #6B6A5E;
+}
+
+/* Dashboard specific */
+.panel {
+  border: 1px solid #1B241F;
+  border-radius: 4px;
+  padding: 40px;
+  width: 100%;
+  max-width: 560px;
+}
+
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--mono);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--signal);
+  margin-bottom: 22px;
+}
+
+.status-row .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--signal);
+}
+
+.panel h2 {
+  font-size: 28px;
+  margin: 0 0 12px;
+  letter-spacing: -0.01em;
+}
+
+.panel p {
+  color: #B9B6AC;
+  line-height: 1.6;
+  margin: 0 0 28px;
+}
+
+.state-loading .status-row { color: #B9B6AC; }
+.state-loading .status-row .dot { background: #B9B6AC; animation: pulse 1.2s infinite ease-in-out; }
+
+.state-error .status-row { color: var(--loss); }
+.state-error .status-row .dot { background: var(--loss); }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .state-loading .status-row .dot { animation: none; }
+}
+
+.btn:focus-visible, a:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
+
+@media (max-width: 560px) {
+  .hero { padding: 56px 0 70px; }
+  .panel { padding: 28px; }
+}
