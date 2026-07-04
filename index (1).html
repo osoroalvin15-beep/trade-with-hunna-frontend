@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trade With Hunna</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0A0F1E;
+    --card: #12193A;
+    --card-border: #232C55;
+    --text: #F1F3FA;
+    --text-dim: #8B92B8;
+    --accent: #5B8CFF;
+    --green: #2ED8A7;
+    --purple: #A76BFF;
+    --red: #FF5C6C;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .mono { font-family: 'IBM Plex Mono', monospace; }
+  a { color: inherit; }
+
+  /* Ticker */
+  .ticker-bar {
+    background: #070A16;
+    border-bottom: 1px solid var(--card-border);
+    overflow: hidden;
+    white-space: nowrap;
+    padding: 9px 0;
+  }
+  .ticker-track {
+    display: inline-block;
+    animation: scroll-left 30s linear infinite;
+  }
+  .ticker-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    padding: 0 22px;
+    border-right: 1px solid var(--card-border);
+    color: var(--text-dim);
+  }
+  .ticker-item b { color: var(--text); }
+  .ticker-item.up { color: var(--green); }
+  .ticker-item.down { color: var(--red); }
+  @keyframes scroll-left {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  /* Hero */
+  .hero {
+    text-align: center;
+    padding: 70px 24px 60px;
+    background:
+      radial-gradient(ellipse 900px 460px at 20% 0%, rgba(91,140,255,0.18), transparent 60%),
+      radial-gradient(ellipse 900px 460px at 80% 10%, rgba(46,216,167,0.12), transparent 60%);
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    padding: 8px 18px;
+    border-radius: 999px;
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-bottom: 30px;
+  }
+  h1 {
+    font-size: clamp(34px, 6vw, 58px);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin: 0 0 34px;
+    line-height: 1.08;
+  }
+  h1 .accent { color: var(--green); }
+  .cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(135deg, var(--green), #1FAF87);
+    color: #04120C;
+    font-weight: 700;
+    font-size: 16px;
+    padding: 16px 30px;
+    border-radius: 12px;
+    text-decoration: none;
+  }
+  .cta-notes {
+    display: flex;
+    justify-content: center;
+    gap: 26px;
+    margin-top: 22px;
+    font-size: 13px;
+    color: var(--text-dim);
+    flex-wrap: wrap;
+  }
+  .cta-notes span { display: inline-flex; align-items: center; gap: 6px; }
+
+  /* Testimonials */
+  .testimonials {
+    max-width: 1180px;
+    margin: 64px auto 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 18px;
+    padding: 0 24px;
+  }
+  .t-card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 26px 22px 22px;
+    text-align: left;
+  }
+  .t-avatar {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--purple));
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 18px;
+  }
+  .t-quote { font-size: 13.5px; color: #C9CDE6; line-height: 1.6; margin-bottom: 20px; }
+  .t-name { font-weight: 700; font-size: 14px; }
+  .t-role { font-size: 12.5px; color: var(--accent); margin-bottom: 8px; }
+  .t-stars { color: #FFC94A; font-size: 13px; letter-spacing: 2px; }
+
+  /* Stats */
+  .stats {
+    max-width: 900px;
+    margin: 64px auto 90px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 16px;
+    padding: 0 24px;
+    text-align: center;
+  }
+  .stat-circle {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 50%;
+    width: 110px; height: 110px;
+    margin: 0 auto 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800;
+    font-size: 20px;
+    color: var(--green);
+  }
+  .stat-label { font-size: 13px; color: var(--text-dim); }
+
+  footer { text-align: center; padding: 26px; color: var(--text-dim); font-size: 12px; font-family: 'IBM Plex Mono', monospace; border-top: 1px solid var(--card-border); }
+
+  .disclaimer {
+    max-width: 700px;
+    margin: 0 auto 40px;
+    text-align: center;
+    font-size: 11.5px;
+    color: #5C6389;
+    padding: 0 24px;
+  }
+</style>
+</head>
+<body>
+
+<div class="ticker-bar">
+  <div class="ticker-track" id="ticker-track"></div>
+</div>
+
+<div class="hero">
+  <div class="badge">&#9889; Built on the Deriv API</div>
+  <h1>Trade smarter,<br><span class="accent">not harder.</span></h1>
+  <a class="cta" href="https://trade-with-hunna-backend.onrender.com/login">Start Trading Now &rarr;</a>
+  <div class="cta-notes">
+    <span>&#9989; Uses your existing Deriv account</span>
+    <span>&#9989; No new password to remember</span>
+  </div>
+
+  <div class="testimonials">
+    <div class="t-card">
+      <div class="t-avatar">SL</div>
+      <div class="t-quote">&ldquo;Clean, fast, and I never have to leave the dashboard to check my balance.&rdquo;</div>
+      <div class="t-name">Sophie L.</div>
+      <div class="t-role">Options Trader</div>
+      <div class="t-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+    </div>
+    <div class="t-card">
+      <div class="t-avatar">RP</div>
+      <div class="t-quote">&ldquo;Logging in with my Deriv account directly saved me from yet another signup form.&rdquo;</div>
+      <div class="t-name">Raj P.</div>
+      <div class="t-role">Quantitative Analyst</div>
+      <div class="t-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+    </div>
+    <div class="t-card">
+      <div class="t-avatar">EP</div>
+      <div class="t-quote">&ldquo;Exactly what I wanted &mdash; a simple, secure front end for my Deriv account.&rdquo;</div>
+      <div class="t-name">Elena P.</div>
+      <div class="t-role">Portfolio Manager</div>
+      <div class="t-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+    </div>
+  </div>
+
+  <div class="disclaimer">Example testimonials and stats shown for design purposes &mdash; replace with real figures before launch.</div>
+
+  <div class="stats">
+    <div>
+      <div class="stat-circle">Beta</div>
+      <div class="stat-label">Early Access</div>
+    </div>
+    <div>
+      <div class="stat-circle">100%</div>
+      <div class="stat-label">Deriv-Secured</div>
+    </div>
+    <div>
+      <div class="stat-circle">0</div>
+      <div class="stat-label">Extra Passwords</div>
+    </div>
+  </div>
+</div>
+
+<footer>Trade With Hunna &nbsp;&middot;&nbsp; Powered by the Deriv API</footer>
+
+<script>
+  const symbols = [
+    ['VOL 100 (1s)', '737.53', 'down'],
+    ['BULL MARKET', '1033.93', 'up'],
+    ['BEAR MARKET', '988.78', 'up'],
+    ['VOL 10', '4895.44', 'up'],
+    ['VOL 25', '2725.49', 'up'],
+    ['VOL 50', '89.88', 'down'],
+    ['VOL 75', '48967.28', 'up'],
+    ['VOL 10 (1s)', '9745.20', 'up'],
+  ];
+  const track = document.getElementById('ticker-track');
+  const renderOnce = symbols.map(([name, val, dir]) =>
+    `<span class="ticker-item ${dir}"><b>${name}</b> ${val} ${dir === 'up' ? '&#9650;' : '&#9660;'}</span>`
+  ).join('');
+  // duplicate for seamless loop
+  track.innerHTML = renderOnce + renderOnce;
+</script>
+
+</body>
+</html>
