@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manual Trader &mdash; Trade With Hunna</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+<style>
+  :root {
+    --bg: #0A0F1E;
+    --card: #12193A;
+    --card-border: #232C55;
+    --text: #F1F3FA;
+    --text-dim: #8B92B8;
+    --accent: #5B8CFF;
+    --green: #2ED8A7;
+    --purple: #A76BFF;
+    --red: #FF5C6C;
+    --amber: #FFC94A;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; }
+  .mono { font-family: 'IBM Plex Mono', monospace; }
+
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 16px 28px; border-bottom: 1px solid var(--card-border); position: relative; z-index: 50; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 18px; text-decoration: none; color: var(--text); }
+  .brand .glyph { width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(135deg, var(--accent), var(--purple)); display: flex; align-items: center; justify-content: center; font-size: 15px; }
+
+  /* Account switcher (pill + dropdown) */
+  .acct-switcher { position: relative; }
+  .balance-pill {
+    display: flex; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--card-border);
+    padding: 8px 16px; border-radius: 999px; font-size: 14px; font-weight: 600; cursor: pointer; user-select: none;
+  }
+  .balance-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+  .balance-pill .amt { color: var(--green); }
+  .balance-pill .badge { font-size: 11px; border: 1px solid; padding: 2px 8px; border-radius: 20px; }
+  .balance-pill .caret { color: var(--text-dim); font-size: 11px; transition: transform 0.15s ease; }
+  .balance-pill.open .caret { transform: rotate(180deg); }
+
+  .acct-dropdown {
+    display: none; position: absolute; top: calc(100% + 10px); right: 0; width: 300px;
+    background: #10172F; border: 1px solid var(--card-border); border-radius: 14px;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.45); overflow: hidden;
+  }
+  .acct-dropdown.open { display: block; }
+  .acct-tabs { display: flex; }
+  .acct-tabs button {
+    flex: 1; background: none; border: none; color: var(--text-dim); font-family: inherit; font-weight: 700;
+    font-size: 14px; padding: 14px 0; cursor: pointer; border-bottom: 2px solid transparent;
+  }
+  .acct-tabs button.active { color: var(--text); border-bottom-color: var(--red); }
+  .acct-tabs button.active.demo-tab { border-bottom-color: var(--amber); }
+  .acct-section-label { padding: 14px 16px 6px; font-size: 12px; color: var(--text-dim); font-weight: 600; }
+  .acct-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    margin: 0 12px 12px; padding: 12px 14px; background: #1A2244; border-radius: 10px;
+    cursor: pointer; border: 1px solid transparent;
+  }
+  .acct-row.selected { border-color: var(--accent); }
+  .acct-row .left { display: flex; align-items: center; gap: 10px; }
+  .acct-row .flag { font-size: 18px; }
+  .acct-row .meta .currency { font-weight: 700; font-size: 14px; }
+  .acct-row .meta .id { font-size: 12px; color: var(--text-dim); }
+  .acct-row .bal { font-weight: 700; font-size: 14px; }
+  .acct-dropdown .logout-row {
+    display: flex; align-items: center; justify-content: flex-end; gap: 6px;
+    padding: 14px 16px; border-top: 1px solid var(--card-border); font-size: 13px; color: var(--text-dim);
+    cursor: pointer;
+  }
+  .acct-dropdown .logout-row:hover { color: var(--text); }
+
+  nav.subnav { display: flex; gap: 4px; padding: 0 20px; border-bottom: 1px solid var(--card-border); overflow-x: auto; background: #0F1630; }
+  nav.subnav a { display: flex; align-items: center; gap: 7px; padding: 14px 16px; font-size: 14px; font-weight: 500; color: var(--text-dim); text-decoration: none; white-space: nowrap; border-bottom: 2px solid transparent; }
+  nav.subnav a.active { color: var(--text); border-bottom-color: var(--accent); }
+
+  .layout { max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .split { display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; align-items: start; }
+  @media (max-width: 820px) { .split { grid-template-columns: 1fr; } }
+  .chart-panel { background: var(--card); border: 1px solid var(--card-border); border-radius: 16px; padding: 20px; }
+  .chart-panel .price-line { margin-bottom: 14px; }
+  .chart-type-toggle { display: flex; gap: 6px; margin-bottom: 12px; }
+  .chart-type-toggle button {
+    display: flex; align-items: center; justify-content: center; width: 34px; height: 34px;
+    background: #0F1630; border: 1px solid var(--card-border); border-radius: 8px; cursor: pointer;
+    color: var(--text-dim);
+  }
+  .chart-type-toggle button svg { width: 16px; height: 16px; display: block; }
+  .chart-type-toggle button.active { background: rgba(91,140,255,0.15); border-color: var(--accent); color: var(--accent); }
+  .warning {
+    background: rgba(255,92,108,0.08); border: 1px solid rgba(255,92,108,0.3);
+    color: #FFB4BC; font-size: 13px; padding: 14px 18px; border-radius: 10px; margin-bottom: 28px; line-height: 1.5;
+  }
+  .warning.demo {
+    background: rgba(255,201,74,0.08); border: 1px solid rgba(255,201,74,0.3); color: #FFE1A3;
+  }
+  .panel { background: var(--card); border: 1px solid var(--card-border); border-radius: 16px; padding: 28px; }
+  .field { margin-bottom: 20px; }
+  .field label { display: block; font-size: 13px; color: var(--text-dim); margin-bottom: 8px; }
+  select, input {
+    width: 100%; background: #0F1630; color: var(--text); border: 1px solid var(--card-border);
+    padding: 12px 14px; border-radius: 10px; font-size: 15px; font-family: inherit;
+  }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .price-line { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding: 14px 16px; background: #0F1630; border-radius: 10px; }
+  .price-line .val { font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 18px; }
+
+  .buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 8px; }
+  .buy-btn {
+    padding: 18px; border-radius: 12px; border: none; font-weight: 700; font-size: 16px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .buy-btn.rise { background: linear-gradient(135deg, var(--green), #1FAF87); color: #04120C; }
+  .buy-btn.fall { background: linear-gradient(135deg, var(--red), #C93E4D); color: #2A0508; }
+  .buy-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .result { margin-top: 24px; padding: 18px; border-radius: 12px; font-size: 14px; line-height: 1.6; display: none; }
+  .result.success { background: rgba(46,216,167,0.08); border: 1px solid rgba(46,216,167,0.3); color: #B9F5E3; display: block; }
+  .result.error { background: rgba(255,92,108,0.08); border: 1px solid rgba(255,92,108,0.3); color: #FFB4BC; display: block; }
+
+  .position-card { margin-top: 24px; padding: 18px; border-radius: 12px; background: #0F1630; border: 1px solid var(--card-border); }
+  .position-card .pos-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 14px; }
+  .position-card .pos-row:last-of-type { margin-bottom: 16px; }
+  .position-card .pos-label { color: var(--text-dim); }
+  .position-card .pos-value { font-weight: 700; }
+  .position-card .pos-value.profit { color: var(--green); }
+  .position-card .pos-value.loss { color: var(--red); }
+  .close-trade-btn {
+    width: 100%; padding: 14px; border-radius: 10px; border: 1px solid var(--red); background: transparent;
+    color: var(--red); font-weight: 700; font-size: 14px; cursor: pointer;
+  }
+  .close-trade-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .close-trade-btn:hover:not(:disabled) { background: rgba(255,92,108,0.1); }
+
+  .gate { text-align: center; padding: 80px 24px; }
+  .gate h2 { font-size: 24px; margin-bottom: 12px; }
+  .gate p { color: var(--text-dim); margin-bottom: 24px; }
+  .btn-primary { display: inline-block; background: linear-gradient(135deg, var(--accent), var(--purple)); color: #fff; font-weight: 700; padding: 14px 26px; border-radius: 10px; text-decoration: none; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a class="brand" href="/"><span class="glyph">&#9889;</span> Trade With Hunna</a>
+  <div class="acct-switcher" id="acct-switcher" style="display:none;">
+    <div class="balance-pill" id="balance-pill">
+      <span class="dot"></span><span>&hellip;</span>
+    </div>
+    <div class="acct-dropdown" id="acct-dropdown">
+      <div class="acct-tabs">
+        <button type="button" id="tab-real" class="real-tab">Real</button>
+        <button type="button" id="tab-demo" class="demo-tab">Demo</button>
+      </div>
+      <div class="acct-section-label">Deriv accounts</div>
+      <div id="acct-list"></div>
+      <div class="logout-row" id="logout-row">Logout &#8594;</div>
+    </div>
+  </div>
+</div>
+
+<nav class="subnav">
+  <a href="dashboard.html">&#128202; Dashboard</a>
+  <a href="manual-trader.html" class="active">&#128200; Manual Trader</a>
+  <a href="#" class="disabled">&#129302; Bot Builder</a>
+  <a href="charts.html">&#128201; Charts</a>
+  <a href="#" class="disabled">&#128257; Copy Trader</a>
+  <a href="#" class="disabled">&#128737;&#65039; Risk Calculator</a>
+</nav>
+
+<div id="content">
+  <div class="gate">
+    <h2 class="mono">Checking session&hellip;</h2>
+  </div>
+</div>
+
+<script>
+  const BACKEND_URL = 'https://trade-with-hunna-backend.onrender.com';
+  const PROXY_WS_URL = 'wss://trade-with-hunna-backend.onrender.com/ws/market-data';
+  const switcherEl = document.getElementById('acct-switcher');
+  const balancePill = document.getElementById('balance-pill');
+  const dropdownEl = document.getElementById('acct-dropdown');
+  const content = document.getElementById('content');
+
+  let currency = 'USD';
+  let priceWs = null;
+
+  // All accounts returned by /api/accounts (both demo and real), and which
+  // one is currently selected for display + trading.
+  let accounts = [];          // [{ account_id, balance, currency, account_type }, ...]
+  let selectedType = 'demo';  // 'demo' or 'real' — default to demo for safety
+
+  let balanceRefreshTimer = null; // keeps the balance pill in sync with the real Deriv account
+  let openContractId = null;      // currently open position, if any
+  let positionPollTimer = null;
+
+  function stopBackgroundPolling() {
+    if (balanceRefreshTimer) { clearInterval(balanceRefreshTimer); balanceRefreshTimer = null; }
+    if (positionPollTimer) { clearInterval(positionPollTimer); positionPollTimer = null; }
+    openContractId = null;
+  }
+
+  function renderLoggedOut() {
+    stopBackgroundPolling();
+    switcherEl.style.display = 'none';
+    content.innerHTML = `
+      <div class="gate">
+        <h2>Log in to trade</h2>
+        <p>You need a connected Deriv account to place trades.</p>
+        <a class="btn-primary" href="${BACKEND_URL}/login">Log in with Deriv</a>
+      </div>`;
+  }
+
+  function currentAccount() {
+    return accounts.find((a) => a.account_type === selectedType) || accounts[0] || null;
+  }
+
+  // ---------- Account switcher (pill + dropdown) ----------
+
+  function renderSwitcher() {
+    const acc = currentAccount();
+    if (!acc) return;
+    currency = acc.currency || 'USD';
+    const balance = parseFloat(acc.balance || 0).toFixed(2);
+    const isDemo = selectedType === 'demo';
+    const badgeColor = isDemo ? 'var(--amber)' : 'var(--green)';
+
+    balancePill.innerHTML = `
+      <span class="dot"></span>
+      <span class="amt mono">${balance} ${escapeHtml(currency)}</span>
+      <span class="badge mono" style="color:${badgeColor}; border-color:${badgeColor}66;">${isDemo ? 'DEMO' : 'REAL'}</span>
+      <span class="caret">&#9660;</span>`;
+
+    renderAcctList();
+    updateTabHighlight();
+  }
+
+  function updateTabHighlight() {
+    const realTab = document.getElementById('tab-real');
+    const demoTab = document.getElementById('tab-demo');
+    realTab.classList.toggle('active', selectedType === 'real');
+    demoTab.classList.toggle('active', selectedType === 'demo');
+  }
+
+  function renderAcctList() {
+    const list = document.getElementById('acct-list');
+    const matching = accounts.filter((a) => a.account_type === selectedType);
+    list.innerHTML = matching.map((a) => {
+      const bal = parseFloat(a.balance || 0).toFixed(2);
+      const isSelected = a === currentAccount();
+      return `
+        <div class="acct-row${isSelected ? ' selected' : ''}" data-account-id="${escapeHtml(a.account_id)}">
+          <div class="left">
+            <span class="flag">&#128176;</span>
+            <div class="meta">
+              <div class="currency mono">${escapeHtml(a.currency)}</div>
+              <div class="id mono">${escapeHtml(a.account_id)}</div>
+            </div>
+          </div>
+          <div class="bal mono">${bal} ${escapeHtml(a.currency)}</div>
+        </div>`;
+    }).join('') || `<div class="acct-section-label" style="padding-bottom:16px;">No ${escapeHtml(selectedType)} account found.</div>`;
+
+    list.querySelectorAll('.acct-row').forEach((row) => {
+      row.addEventListener('click', () => {
+        // Only one account per type in practice, but this supports multiple.
+        closeDropdown();
+        onAccountChanged();
+      });
+    });
+  }
+
+  function onAccountChanged() {
+    renderSwitcher();
+    updateWarningBanner();
+    stopTrackingPosition();
+    const card = document.getElementById('position-card');
+    if (card) card.style.display = 'none';
+  }
+
+  function openDropdown() {
+    dropdownEl.classList.add('open');
+    balancePill.classList.add('open');
+  }
+  function closeDropdown() {
+    dropdownEl.classList.remove('open');
+    balancePill.classList.remove('open');
+  }
+
+  balancePill.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropdownEl.classList.contains('open') ? closeDropdown() : openDropdown();
+  });
+  document.addEventListener('click', (e) => {
+    if (!switcherEl.contains(e.target)) closeDropdown();
+  });
+
+  document.getElementById('tab-real').addEventListener('click', () => {
+    selectedType = 'real';
+    onAccountChanged();
+  });
+  document.getElementById('tab-demo').addEventListener('click', () => {
+    selectedType = 'demo';
+    onAccountChanged();
+  });
+  document.getElementById('logout-row').addEventListener('click', async () => {
+    await fetch(`${BACKEND_URL}/logout`, { method: 'POST', credentials: 'include' });
+    window.location.href = `${BACKEND_URL}/login`;
+  });
+
+  function updateWarningBanner() {
+    const banner = document.getElementById('trade-warning');
+    if (!banner) return;
+    if (selectedType === 'real') {
+      banner.className = 'warning';
+      banner.innerHTML = '&#9888;&#65039; You are trading on your REAL account. This places a real trade using real funds. Only trade with money you can afford to lose.';
+    } else {
+      banner.className = 'warning demo';
+      banner.innerHTML = '&#127919; You are trading on your DEMO account. No real money is at risk.';
+    }
+    const stakeLabel = document.getElementById('stake-label');
+    if (stakeLabel) stakeLabel.textContent = `Stake (${currency})`;
+  }
+
+  // Re-fetches balances from the backend (which itself always pulls fresh
+  // data from Deriv) so the pill reflects real changes - deposits, other
+  // trades, or a trade this tab just placed - instead of only whatever was
+  // loaded when the page first opened.
+  async function refreshAccounts() {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/accounts`, { credentials: 'include' });
+      const data = await res.json();
+      if (data.error || !data.data) return;
+      accounts = data.data;
+      renderSwitcher();
+    } catch (err) {
+      // Silent - a missed background refresh isn't worth surfacing an error for
+    }
+  }
+
+  function startBalancePolling() {
+    if (balanceRefreshTimer) clearInterval(balanceRefreshTimer);
+    balanceRefreshTimer = setInterval(refreshAccounts, 8000);
+  }
+
+  // ---------- Trader panel ----------
+
+  function renderTrader() {
+    switcherEl.style.display = 'block';
+    renderSwitcher();
+
+    content.innerHTML = `
+      <div class="layout">
+        <div class="warning" id="trade-warning"></div>
+        <div class="split">
+          <div class="chart-panel">
+            <div class="price-line">
+              <span class="mono" style="color:var(--text-dim); font-size:13px;">CURRENT PRICE</span>
+              <span class="val mono" id="live-price">&hellip;</span>
+            </div>
+            <div class="chart-type-toggle">
+              <button type="button" id="chart-type-line" title="Line chart">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 6"></polyline></svg>
+              </button>
+              <button type="button" id="chart-type-candle" title="Candlestick chart">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="4" x2="6" y2="20"></line><rect x="3" y="9" width="6" height="6"></rect><line x1="16" y1="2" x2="16" y2="10"></line><rect x="13" y="10" width="6" height="7"></rect></svg>
+              </button>
+            </div>
+            <div id="mini-chart-container" style="height:380px; border-radius:12px; overflow:hidden; background:#0F1630;"></div>
+            <div id="chart-error" class="mono" style="color:#FFB4BC; font-size:12px; margin-top:10px; display:none;"></div>
+          </div>
+          <div class="panel">
+            <div class="field">
+              <label>Market</label>
+              <select id="symbol-select">
+                <option value="R_10">Volatility 10 Index</option>
+                <option value="R_25">Volatility 25 Index</option>
+                <option value="R_50">Volatility 50 Index</option>
+                <option value="R_75" selected>Volatility 75 Index</option>
+                <option value="R_100">Volatility 100 Index</option>
+              </select>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label id="stake-label">Stake (${escapeHtml(currency)})</label>
+                <input type="number" id="stake-input" value="1" min="0.35" step="0.01">
+              </div>
+              <div class="field">
+                <label>Duration (ticks)</label>
+                <input type="number" id="duration-input" value="5" min="1" max="10" step="1">
+              </div>
+            </div>
+            <div class="buttons">
+              <button class="buy-btn rise" id="rise-btn">&#9650; Rise</button>
+              <button class="buy-btn fall" id="fall-btn">&#9660; Fall</button>
+            </div>
+            <div class="result" id="result"></div>
+            <div class="position-card" id="position-card" style="display:none;"></div>
+          </div>
+        </div>
+      </div>`;
+
+    updateWarningBanner();
+    startBalancePolling();
+
+    initMiniChart(document.getElementById('symbol-select').value);
+    connectPriceFeed(document.getElementById('symbol-select').value);
+    document.getElementById('symbol-select').addEventListener('change', (e) => {
+      initMiniChart(e.target.value);
+      connectPriceFeed(e.target.value);
+    });
+    document.getElementById('rise-btn').addEventListener('click', () => placeTrade('CALL'));
+    document.getElementById('fall-btn').addEventListener('click', () => placeTrade('PUT'));
+
+    updateChartTypeButtons();
+    document.getElementById('chart-type-line').addEventListener('click', () => {
+      if (chartType === 'line') return;
+      chartType = 'line';
+      updateChartTypeButtons();
+      initMiniChart(document.getElementById('symbol-select').value);
+    });
+    document.getElementById('chart-type-candle').addEventListener('click', () => {
+      if (chartType === 'candle') return;
+      chartType = 'candle';
+      updateChartTypeButtons();
+      initMiniChart(document.getElementById('symbol-select').value);
+    });
+  }
+
+  let miniChart = null;
+  let miniSeries = null;
+  let chartType = 'candle'; // 'candle' or 'line' — user-selectable via the toggle above the chart
+
+  function updateChartTypeButtons() {
+    const lineBtn = document.getElementById('chart-type-line');
+    const candleBtn = document.getElementById('chart-type-candle');
+    if (!lineBtn || !candleBtn) return;
+    lineBtn.classList.toggle('active', chartType === 'line');
+    candleBtn.classList.toggle('active', chartType === 'candle');
+  }
+
+  function initMiniChart(symbol) {
+    const container = document.getElementById('mini-chart-container');
+    const errorEl = document.getElementById('chart-error');
+    if (!container) return;
+    container.innerHTML = '';
+    if (errorEl) { errorEl.style.display = 'none'; errorEl.textContent = ''; }
+
+    if (typeof LightweightCharts === 'undefined') {
+      if (errorEl) {
+        errorEl.style.display = 'block';
+        errorEl.textContent = 'Chart library failed to load (LightweightCharts is undefined). Check your connection or ad-blocker.';
+      }
+      return;
+    }
+
+    try {
+      miniChart = LightweightCharts.createChart(container, {
+        layout: { background: { color: 'transparent' }, textColor: '#8B92B8' },
+        grid: { vertLines: { color: '#1B2347' }, horzLines: { color: '#1B2347' } },
+        timeScale: { timeVisible: true, secondsVisible: false },
+        rightPriceScale: { borderColor: '#232C55' },
+        width: container.clientWidth,
+        height: container.clientHeight,
+      });
+      if (chartType === 'line') {
+        miniSeries = miniChart.addLineSeries({
+          color: '#5B8CFF', lineWidth: 2,
+        });
+      } else {
+        miniSeries = miniChart.addCandlestickSeries({
+          upColor: '#2ED8A7', downColor: '#FF5C6C', borderVisible: false,
+          wickUpColor: '#2ED8A7', wickDownColor: '#FF5C6C',
+        });
+      }
+      fetchHistory(symbol);
+    } catch (err) {
+      if (errorEl) {
+        errorEl.style.display = 'block';
+        errorEl.textContent = 'Chart error: ' + err.message;
+      }
+    }
+  }
+
+  function fetchHistory(symbol) {
+    const errorEl = document.getElementById('chart-error');
+    const histWs = new WebSocket(PROXY_WS_URL);
+    histWs.onopen = () => {
+      histWs.send(JSON.stringify({
+        ticks_history: symbol, adjust_start_time: 1, count: 100,
+        end: 'latest', start: 1, style: 'candles', granularity: 60,
+      }));
+    };
+    histWs.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.error) {
+        if (errorEl) { errorEl.style.display = 'block'; errorEl.textContent = 'Data error: ' + data.error.message; }
+        histWs.close();
+        return;
+      }
+      if (data.msg_type === 'candles' && data.candles && miniSeries) {
+        const bars = chartType === 'line'
+          ? data.candles.map((c) => ({ time: c.epoch, value: parseFloat(c.close) }))
+          : data.candles.map((c) => ({
+              time: c.epoch, open: parseFloat(c.open), high: parseFloat(c.high),
+              low: parseFloat(c.low), close: parseFloat(c.close),
+            }));
+        miniSeries.setData(bars);
+        miniChart.timeScale().fitContent();
+      }
+      histWs.close();
+    };
+    histWs.onerror = () => {
+      if (errorEl) { errorEl.style.display = 'block'; errorEl.textContent = 'Could not connect to market data feed.'; }
+    };
+  }
+
+  function connectPriceFeed(symbol) {
+    if (priceWs) priceWs.close();
+    const priceEl = document.getElementById('live-price');
+    if (priceEl) priceEl.textContent = '\u2026';
+    priceWs = new WebSocket(PROXY_WS_URL);
+    priceWs.onopen = () => priceWs.send(JSON.stringify({ ticks: symbol, subscribe: 1 }));
+    priceWs.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.msg_type === 'tick' && data.tick) {
+        const el = document.getElementById('live-price');
+        if (el) el.textContent = parseFloat(data.tick.quote).toFixed(2);
+      }
+    };
+  }
+
+  async function placeTrade(contractType) {
+    const symbol = document.getElementById('symbol-select').value;
+    const stake = document.getElementById('stake-input').value;
+    const duration = document.getElementById('duration-input').value;
+    const resultEl = document.getElementById('result');
+    const riseBtn = document.getElementById('rise-btn');
+    const fallBtn = document.getElementById('fall-btn');
+
+    riseBtn.disabled = true;
+    fallBtn.disabled = true;
+    resultEl.className = 'result';
+    resultEl.textContent = '';
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/trade`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          symbol,
+          contractType,
+          stake,
+          duration,
+          durationUnit: 't',
+          currency,
+          accountType: selectedType, // 'demo' or 'real' — tells the backend which account to trade on
+        }),
+      });
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        resultEl.className = 'result error';
+        resultEl.textContent = 'Trade failed: ' + (data.message || data.error || 'Unknown error');
+      } else {
+        resultEl.className = 'result success';
+        resultEl.innerHTML = `Trade placed on your ${selectedType.toUpperCase()} account.<br>${escapeHtml(data.longcode || '')}<br>Buy price: ${data.buyPrice} ${escapeHtml(currency)} &middot; Potential payout: ${data.payout} ${escapeHtml(currency)}`;
+        startTrackingPosition(data.contractId);
+        refreshAccounts(); // stake was just deducted - reflect it right away instead of waiting for the next poll
+      }
+    } catch (err) {
+      resultEl.className = 'result error';
+      resultEl.textContent = 'Trade failed: could not reach server.';
+    } finally {
+      riseBtn.disabled = false;
+      fallBtn.disabled = false;
+    }
+  }
+
+  // ---------- Open position tracking ----------
+
+  function startTrackingPosition(contractId) {
+    openContractId = contractId;
+    if (positionPollTimer) clearInterval(positionPollTimer);
+    pollPositionStatus(); // immediate first check, then every few seconds
+    positionPollTimer = setInterval(pollPositionStatus, 3000);
+  }
+
+  function stopTrackingPosition() {
+    if (positionPollTimer) { clearInterval(positionPollTimer); positionPollTimer = null; }
+    openContractId = null;
+  }
+
+  async function pollPositionStatus() {
+    if (!openContractId) return;
+    const card = document.getElementById('position-card');
+    if (!card) return; // panel no longer on screen (e.g. account switched)
+
+    try {
+      const res = await fetch(
+        `${BACKEND_URL}/api/contract/${openContractId}/status?accountType=${selectedType}`,
+        { credentials: 'include' }
+      );
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        card.style.display = 'block';
+        card.innerHTML = `<div class="pos-row"><span class="pos-label">Position status unavailable</span></div>`;
+        return;
+      }
+
+      const profit = Number(data.profit || 0);
+      const isProfit = profit >= 0;
+
+      if (data.isSold) {
+        card.style.display = 'block';
+        card.innerHTML = `
+          <div class="pos-row"><span class="pos-label">Contract closed</span><span class="pos-value ${isProfit ? 'profit' : 'loss'} mono">${isProfit ? '+' : ''}${profit.toFixed(2)} ${escapeHtml(currency)}</span></div>`;
+        stopTrackingPosition();
+        refreshAccounts(); // reflect the closed contract's payout/loss right away
+        return;
+      }
+
+      card.style.display = 'block';
+      card.innerHTML = `
+        <div class="pos-row"><span class="pos-label">Open position</span><span class="pos-value mono">#${escapeHtml(data.contractId)}</span></div>
+        <div class="pos-row"><span class="pos-label">Current profit/loss</span><span class="pos-value ${isProfit ? 'profit' : 'loss'} mono">${isProfit ? '+' : ''}${profit.toFixed(2)} ${escapeHtml(currency)}</span></div>
+        <button class="close-trade-btn" id="close-trade-btn" ${data.isValidToSell ? '' : 'disabled'}>Close Trade</button>`;
+
+      const closeBtn = document.getElementById('close-trade-btn');
+      if (closeBtn) closeBtn.addEventListener('click', () => closeTrade(data.contractId));
+    } catch (err) {
+      // Silent - next poll cycle will retry
+    }
+  }
+
+  async function closeTrade(contractId) {
+    const card = document.getElementById('position-card');
+    const closeBtn = document.getElementById('close-trade-btn');
+    if (closeBtn) closeBtn.disabled = true;
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/contract/${contractId}/close`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accountType: selectedType }),
+      });
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        if (card) {
+          card.innerHTML = `<div class="pos-row"><span class="pos-label">Could not close trade</span></div><div class="pos-row"><span class="pos-label" style="color:var(--red);">${escapeHtml(data.message || data.error || 'Unknown error')}</span></div>`;
+        }
+        if (closeBtn) closeBtn.disabled = false;
+        return;
+      }
+
+      if (card) {
+        card.innerHTML = `<div class="pos-row"><span class="pos-label">Trade closed</span><span class="pos-value mono">Sold for ${data.soldFor} ${escapeHtml(currency)}</span></div>`;
+      }
+      stopTrackingPosition();
+      refreshAccounts();
+    } catch (err) {
+      if (closeBtn) closeBtn.disabled = false;
+    }
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str == null ? '' : String(str);
+    return div.innerHTML;
+  }
+
+  fetch(`${BACKEND_URL}/me`, { credentials: 'include' })
+    .then((res) => res.json())
+    .then((meData) => {
+      if (!meData.loggedIn) { renderLoggedOut(); return; }
+      return fetch(`${BACKEND_URL}/api/accounts`, { credentials: 'include' })
+        .then((res) => res.json())
+        .then((accountData) => {
+          if (accountData.error) { renderLoggedOut(); return; }
+          // Backend /api/accounts returns { data: [ { account_id, balance, currency, account_type }, ... ] }
+          accounts = accountData.data || [];
+          if (!accounts.length) { renderLoggedOut(); return; }
+          // Default to demo if available, otherwise whichever account exists
+          selectedType = accounts.some((a) => a.account_type === 'demo') ? 'demo' : accounts[0].account_type;
+          renderTrader();
+        });
+    })
+    .catch(() => renderLoggedOut());
+</script>
+
+</body>
+</html>
