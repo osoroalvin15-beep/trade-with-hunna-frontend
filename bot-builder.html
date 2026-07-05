@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bot Builder &mdash; Trade With Hunna</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0A0F1E;
+    --card: #12193A;
+    --card-border: #232C55;
+    --text: #F1F3FA;
+    --text-dim: #8B92B8;
+    --accent: #5B8CFF;
+    --green: #2ED8A7;
+    --purple: #A76BFF;
+    --red: #FF5C6C;
+    --amber: #FFC94A;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; }
+  .mono { font-family: 'IBM Plex Mono', monospace; }
+
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 16px 28px; border-bottom: 1px solid var(--card-border); position: relative; z-index: 50; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 18px; text-decoration: none; color: var(--text); }
+  .brand .glyph { width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(135deg, var(--accent), var(--purple)); display: flex; align-items: center; justify-content: center; font-size: 15px; }
+
+  /* Account switcher (pill + dropdown) - same pattern as Manual Trader */
+  .acct-switcher { position: relative; }
+  .balance-pill {
+    display: flex; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--card-border);
+    padding: 8px 16px; border-radius: 999px; font-size: 14px; font-weight: 600; cursor: pointer; user-select: none;
+  }
+  .balance-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+  .balance-pill .amt { color: var(--green); }
+  .balance-pill .badge { font-size: 11px; border: 1px solid; padding: 2px 8px; border-radius: 20px; }
+  .balance-pill .caret { color: var(--text-dim); font-size: 11px; transition: transform 0.15s ease; }
+  .balance-pill.open .caret { transform: rotate(180deg); }
+
+  .acct-dropdown {
+    display: none; position: absolute; top: calc(100% + 10px); right: 0; width: 300px;
+    background: #10172F; border: 1px solid var(--card-border); border-radius: 14px;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.45); overflow: hidden;
+  }
+  .acct-dropdown.open { display: block; }
+  .acct-tabs { display: flex; }
+  .acct-tabs button {
+    flex: 1; background: none; border: none; color: var(--text-dim); font-family: inherit; font-weight: 700;
+    font-size: 14px; padding: 14px 0; cursor: pointer; border-bottom: 2px solid transparent;
+  }
+  .acct-tabs button.active { color: var(--text); border-bottom-color: var(--red); }
+  .acct-tabs button.active.demo-tab { border-bottom-color: var(--amber); }
+  .acct-section-label { padding: 14px 16px 6px; font-size: 12px; color: var(--text-dim); font-weight: 600; }
+  .acct-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    margin: 0 12px 12px; padding: 12px 14px; background: #1A2244; border-radius: 10px;
+    cursor: pointer; border: 1px solid transparent;
+  }
+  .acct-row.selected { border-color: var(--accent); }
+  .acct-row .left { display: flex; align-items: center; gap: 10px; }
+  .acct-row .flag { font-size: 18px; }
+  .acct-row .meta .currency { font-weight: 700; font-size: 14px; }
+  .acct-row .meta .id { font-size: 12px; color: var(--text-dim); }
+  .acct-row .bal { font-weight: 700; font-size: 14px; }
+  .acct-dropdown .logout-row {
+    display: flex; align-items: center; justify-content: flex-end; gap: 6px;
+    padding: 14px 16px; border-top: 1px solid var(--card-border); font-size: 13px; color: var(--text-dim);
+    cursor: pointer;
+  }
+  .acct-dropdown .logout-row:hover { color: var(--text); }
+
+  nav.subnav { display: flex; gap: 4px; padding: 0 20px; border-bottom: 1px solid var(--card-border); overflow-x: auto; background: #0F1630; }
+  nav.subnav a { display: flex; align-items: center; gap: 7px; padding: 14px 16px; font-size: 14px; font-weight: 500; color: var(--text-dim); text-decoration: none; white-space: nowrap; border-bottom: 2px solid transparent; }
+  nav.subnav a.active { color: var(--text); border-bottom-color: var(--accent); }
+
+  .layout { max-width: 1300px; margin: 0 auto; padding: 32px 24px 80px; }
+  .builder-grid { display: grid; grid-template-columns: 1fr 380px; gap: 20px; align-items: start; }
+  @media (max-width: 980px) { .builder-grid { grid-template-columns: 1fr; } }
+
+  .warning {
+    background: rgba(255,92,108,0.08); border: 1px solid rgba(255,92,108,0.3);
+    color: #FFB4BC; font-size: 13px; padding: 14px 18px; border-radius: 10px; margin-bottom: 24px; line-height: 1.5;
+  }
+  .warning.demo { background: rgba(255,201,74,0.08); border: 1px solid rgba(255,201,74,0.3); color: #FFE1A3; }
+
+  .card { background: var(--card); border: 1px solid var(--card-border); border-radius: 16px; margin-bottom: 20px; overflow: hidden; }
+  .card-header {
+    background: #17205071; padding: 14px 20px; font-weight: 700; font-size: 14px;
+    display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--card-border);
+  }
+  .card-header .num {
+    width: 22px; height: 22px; border-radius: 6px; background: var(--accent); color: #fff;
+    display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800;
+  }
+  .card-body { padding: 20px; }
+  .field { margin-bottom: 18px; }
+  .field:last-child { margin-bottom: 0; }
+  .field label { display: block; font-size: 13px; color: var(--text-dim); margin-bottom: 8px; }
+  .field .hint { font-size: 12px; color: var(--text-dim); margin-top: 6px; }
+  select, input {
+    width: 100%; background: #0F1630; color: var(--text); border: 1px solid var(--card-border);
+    padding: 11px 13px; border-radius: 10px; font-size: 14px; font-family: inherit;
+  }
+  select:disabled, input:disabled { opacity: 0.45; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .checkbox-field { display: flex; align-items: center; gap: 10px; }
+  .checkbox-field input { width: auto; }
+  .checkbox-field label { margin: 0; }
+
+  /* Run panel (right column) */
+  .run-panel { position: sticky; top: 20px; }
+  .run-btn {
+    width: 100%; padding: 16px; border-radius: 12px; border: none; font-weight: 700; font-size: 15px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 16px;
+  }
+  .run-btn.start { background: linear-gradient(135deg, var(--green), #1FAF87); color: #04120C; }
+  .run-btn.stop { background: linear-gradient(135deg, var(--red), #C93E4D); color: #2A0508; }
+  .run-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .stat-box { background: #0F1630; border: 1px solid var(--card-border); border-radius: 10px; padding: 12px 14px; }
+  .stat-box .stat-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 6px; }
+  .stat-box .stat-value { font-weight: 700; font-size: 16px; }
+  .stat-box .stat-value.profit { color: var(--green); }
+  .stat-box .stat-value.loss { color: var(--red); }
+
+  .status-line {
+    display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-dim);
+    padding: 10px 14px; background: #0F1630; border-radius: 10px; margin-bottom: 16px;
+  }
+  .status-line .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-dim); }
+  .status-line.running .status-dot { background: var(--green); animation: pulse 1.4s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+  .log-panel {
+    background: #0F1630; border: 1px solid var(--card-border); border-radius: 10px; padding: 12px 14px;
+    max-height: 260px; overflow-y: auto; font-size: 12.5px; line-height: 1.7;
+  }
+  .log-panel .log-entry { color: var(--text-dim); }
+  .log-panel .log-entry.profit { color: var(--green); }
+  .log-panel .log-entry.loss { color: var(--red); }
+  .log-panel .log-empty { color: var(--text-dim); text-align: center; padding: 24px 0; }
+  .reset-btn {
+    width: 100%; margin-top: 14px; padding: 12px; border-radius: 10px; border: 1px solid var(--card-border);
+    background: transparent; color: var(--text-dim); font-weight: 600; font-size: 13px; cursor: pointer;
+  }
+  .reset-btn:hover { color: var(--text); border-color: var(--text-dim); }
+
+  .gate { text-align: center; padding: 80px 24px; }
+  .gate h2 { font-size: 24px; margin-bottom: 12px; }
+  .gate p { color: var(--text-dim); margin-bottom: 24px; }
+  .btn-primary { display: inline-block; background: linear-gradient(135deg, var(--accent), var(--purple)); color: #fff; font-weight: 700; padding: 14px 26px; border-radius: 10px; text-decoration: none; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a class="brand" href="/"><span class="glyph">&#9889;</span> Trade With Hunna</a>
+  <div class="acct-switcher" id="acct-switcher" style="display:none;">
+    <div class="balance-pill" id="balance-pill">
+      <span class="dot"></span><span>&hellip;</span>
+    </div>
+    <div class="acct-dropdown" id="acct-dropdown">
+      <div class="acct-tabs">
+        <button type="button" id="tab-real" class="real-tab">Real</button>
+        <button type="button" id="tab-demo" class="demo-tab">Demo</button>
+      </div>
+      <div class="acct-section-label">Deriv accounts</div>
+      <div id="acct-list"></div>
+      <div class="logout-row" id="logout-row">Logout &#8594;</div>
+    </div>
+  </div>
+</div>
+
+<nav class="subnav">
+  <a href="dashboard.html">&#128202; Dashboard</a>
+  <a href="manual-trader.html">&#128200; Manual Trader</a>
+  <a href="bot-builder.html" class="active">&#129302; Bot Builder</a>
+  <a href="charts.html">&#128201; Charts</a>
+  <a href="#" class="disabled">&#128257; Copy Trader</a>
+  <a href="#" class="disabled">&#128737;&#65039; Risk Calculator</a>
+</nav>
+
+<div id="content">
+  <div class="gate">
+    <h2 class="mono">Checking session&hellip;</h2>
+  </div>
+</div>
+
+<script>
+  const BACKEND_URL = 'https://trade-with-hunna-backend.onrender.com';
+  const PROXY_WS_URL = 'wss://trade-with-hunna-backend.onrender.com/ws/market-data';
+  const switcherEl = document.getElementById('acct-switcher');
+  const balancePill = document.getElementById('balance-pill');
+  const dropdownEl = document.getElementById('acct-dropdown');
+  const content = document.getElementById('content');
+
+  let currency = 'USD';
+  let accounts = [];
+  let selectedType = 'demo';
+  let balanceRefreshTimer = null;
+
+  function renderLoggedOut() {
+    if (balanceRefreshTimer) { clearInterval(balanceRefreshTimer); balanceRefreshTimer = null; }
+    stopBot(true);
+    switcherEl.style.display = 'none';
+    content.innerHTML = `
+      <div class="gate">
+        <h2>Log in to build a bot</h2>
+        <p>You need a connected Deriv account to run automated strategies.</p>
+        <a class="btn-primary" href="${BACKEND_URL}/login">Log in with Deriv</a>
+      </div>`;
+  }
+
+  function currentAccount() {
+    return accounts.find((a) => a.account_type === selectedType) || accounts[0] || null;
+  }
+
+  // ---------- Account switcher (identical pattern to Manual Trader) ----------
+
+  function renderSwitcher() {
+    const acc = currentAccount();
+    if (!acc) return;
+    currency = acc.currency || 'USD';
+    const balance = parseFloat(acc.balance || 0).toFixed(2);
+    const isDemo = selectedType === 'demo';
+    const badgeColor = isDemo ? 'var(--amber)' : 'var(--green)';
+
+    balancePill.innerHTML = `
+      <span class="dot"></span>
+      <span class="amt mono">${balance} ${escapeHtml(currency)}</span>
+      <span class="badge mono" style="color:${badgeColor}; border-color:${badgeColor}66;">${isDemo ? 'DEMO' : 'REAL'}</span>
+      <span class="caret">&#9660;</span>`;
+
+    renderAcctList();
+    updateTabHighlight();
+  }
+
+  function updateTabHighlight() {
+    document.getElementById('tab-real').classList.toggle('active', selectedType === 'real');
+    document.getElementById('tab-demo').classList.toggle('active', selectedType === 'demo');
+  }
+
+  function renderAcctList() {
+    const list = document.getElementById('acct-list');
+    const matching = accounts.filter((a) => a.account_type === selectedType);
+    list.innerHTML = matching.map((a) => {
+      const bal = parseFloat(a.balance || 0).toFixed(2);
+      const isSelected = a === currentAccount();
+      return `
+        <div class="acct-row${isSelected ? ' selected' : ''}" data-account-id="${escapeHtml(a.account_id)}">
+          <div class="left">
+            <span class="flag">&#128176;</span>
+            <div class="meta">
+              <div class="currency mono">${escapeHtml(a.currency)}</div>
+              <div class="id mono">${escapeHtml(a.account_id)}</div>
+            </div>
+          </div>
+          <div class="bal mono">${bal} ${escapeHtml(a.currency)}</div>
+        </div>`;
+    }).join('') || `<div class="acct-section-label" style="padding-bottom:16px;">No ${escapeHtml(selectedType)} account found.</div>`;
+
+    list.querySelectorAll('.acct-row').forEach((row) => {
+      row.addEventListener('click', () => { closeDropdown(); onAccountChanged(); });
+    });
+  }
+
+  function onAccountChanged() {
+    renderSwitcher();
+    updateWarningBanner();
+    // Switching accounts mid-run would trade on the wrong account - stop for safety.
+    if (botState === 'running') stopBot(false, 'Bot stopped: account was switched.');
+  }
+
+  function openDropdown() { dropdownEl.classList.add('open'); balancePill.classList.add('open'); }
+  function closeDropdown() { dropdownEl.classList.remove('open'); balancePill.classList.remove('open'); }
+
+  balancePill.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropdownEl.classList.contains('open') ? closeDropdown() : openDropdown();
+  });
+  document.addEventListener('click', (e) => {
+    if (!switcherEl.contains(e.target)) closeDropdown();
+  });
+  document.getElementById('tab-real').addEventListener('click', () => { selectedType = 'real'; onAccountChanged(); });
+  document.getElementById('tab-demo').addEventListener('click', () => { selectedType = 'demo'; onAccountChanged(); });
+  document.getElementById('logout-row').addEventListener('click', async () => {
+    await fetch(`${BACKEND_URL}/logout`, { method: 'POST', credentials: 'include' });
+    window.location.href = `${BACKEND_URL}/login`;
+  });
+
+  function updateWarningBanner() {
+    const banner = document.getElementById('bot-warning');
+    if (!banner) return;
+    if (selectedType === 'real') {
+      banner.className = 'warning';
+      banner.innerHTML = '&#9888;&#65039; This bot will trade on your REAL account using real funds. Test your strategy on Demo first.';
+    } else {
+      banner.className = 'warning demo';
+      banner.innerHTML = '&#127919; This bot is set to trade on your DEMO account. No real money is at risk.';
+    }
+  }
+
+  async function refreshAccounts() {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/accounts`, { credentials: 'include' });
+      const data = await res.json();
+      if (data.error || !data.data) return;
+      accounts = data.data;
+      renderSwitcher();
+    } catch (err) { /* silent - retried on next cycle */ }
+  }
+
+  function startBalancePolling() {
+    if (balanceRefreshTimer) clearInterval(balanceRefreshTimer);
+    balanceRefreshTimer = setInterval(refreshAccounts, 8000);
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str == null ? '' : String(str);
+    return div.innerHTML;
+  }
+
+  // ---------- Bot Builder panel ----------
+
+  function renderBuilder() {
+    switcherEl.style.display = 'block';
+    renderSwitcher();
+
+    content.innerHTML = `
+      <div class="layout">
+        <div class="warning" id="bot-warning"></div>
+        <div class="builder-grid">
+          <div>
+            <div class="card">
+              <div class="card-header"><span class="num">1</span> Trade parameters</div>
+              <div class="card-body">
+                <div class="field">
+                  <label>Market</label>
+                  <select id="bot-symbol">
+                    <option value="R_10">Volatility 10 Index</option>
+                    <option value="R_25">Volatility 25 Index</option>
+                    <option value="R_50">Volatility 50 Index</option>
+                    <option value="R_75" selected>Volatility 75 Index</option>
+                    <option value="R_100">Volatility 100 Index</option>
+                  </select>
+                </div>
+                <div class="row2">
+                  <div class="field">
+                    <label>Contract to buy</label>
+                    <select id="bot-contract-type">
+                      <option value="CALL">Rise</option>
+                      <option value="PUT">Fall</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>Duration (ticks)</label>
+                    <input type="number" id="bot-duration" value="5" min="1" max="10" step="1">
+                  </div>
+                </div>
+                <div class="field">
+                  <label>Base stake (${escapeHtml(currency)})</label>
+                  <input type="number" id="bot-base-stake" value="1" min="0.35" step="0.01">
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header"><span class="num">2</span> Purchase conditions</div>
+              <div class="card-body">
+                <div class="field">
+                  <label>Entry trigger</label>
+                  <select id="bot-trigger-type">
+                    <option value="immediate">Trade immediately, then repeat automatically</option>
+                    <option value="streak">Wait for a streak of consecutive ticks in one direction</option>
+                  </select>
+                </div>
+                <div class="row2" id="bot-streak-fields" style="display:none;">
+                  <div class="field">
+                    <label>Direction to watch for</label>
+                    <select id="bot-streak-direction">
+                      <option value="up">Consecutive rises</option>
+                      <option value="down">Consecutive falls</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>Streak length (ticks)</label>
+                    <input type="number" id="bot-streak-length" value="3" min="2" max="10" step="1">
+                  </div>
+                </div>
+                <div class="field hint" id="bot-trigger-hint" style="margin-top:-6px;">The bot places a trade, waits for it to resolve, then immediately looks for the next entry.</div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header"><span class="num">3</span> Risk management</div>
+              <div class="card-body">
+                <div class="row2">
+                  <div class="field">
+                    <label>On loss, multiply next stake by</label>
+                    <input type="number" id="bot-loss-multiplier" value="1" min="1" step="0.1">
+                    <div class="hint">Use 1 for flat staking. Use e.g. 2 for a martingale-style recovery. Higher multipliers increase risk quickly.</div>
+                  </div>
+                  <div class="field">
+                    <div class="checkbox-field" style="margin-top:30px;">
+                      <input type="checkbox" id="bot-reset-on-win" checked>
+                      <label for="bot-reset-on-win">Reset stake to base after a win</label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header"><span class="num">4</span> Stop conditions</div>
+              <div class="card-body">
+                <div class="row3">
+                  <div class="field">
+                    <label>Stop after N trades (optional)</label>
+                    <input type="number" id="bot-max-trades" min="1" step="1" placeholder="Unlimited">
+                  </div>
+                  <div class="field">
+                    <label>Stop at total profit (optional)</label>
+                    <input type="number" id="bot-stop-profit" min="0" step="0.01" placeholder="No limit">
+                  </div>
+                  <div class="field">
+                    <label>Stop at total loss (optional)</label>
+                    <input type="number" id="bot-stop-loss" min="0" step="0.01" placeholder="No limit">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="run-panel">
+            <div class="card">
+              <div class="card-body">
+                <button class="run-btn start" id="bot-run-btn">&#9654; Run bot</button>
+                <div class="status-line" id="bot-status-line"><span class="status-dot"></span><span id="bot-status-text">Idle</span></div>
+                <div class="stats-grid">
+                  <div class="stat-box"><div class="stat-label">Total stake</div><div class="stat-value mono" id="stat-total-stake">0.00 ${escapeHtml(currency)}</div></div>
+                  <div class="stat-box"><div class="stat-label">Total payout</div><div class="stat-value mono" id="stat-total-payout">0.00 ${escapeHtml(currency)}</div></div>
+                  <div class="stat-box"><div class="stat-label">Runs</div><div class="stat-value mono" id="stat-runs">0</div></div>
+                  <div class="stat-box"><div class="stat-label">Won / Lost</div><div class="stat-value mono" id="stat-won-lost">0 / 0</div></div>
+                  <div class="stat-box" style="grid-column: 1 / -1;"><div class="stat-label">Total profit/loss</div><div class="stat-value mono" id="stat-pnl">0.00 ${escapeHtml(currency)}</div></div>
+                </div>
+                <div class="log-panel" id="bot-log"><div class="log-empty">When you're ready to trade, hit Run.<br>Activity will show here.</div></div>
+                <button class="reset-btn" id="bot-reset-btn">Reset stats</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+
+    updateWarningBanner();
+    startBalancePolling();
+
+    document.getElementById('bot-trigger-type').addEventListener('change', (e) => {
+      const isStreak = e.target.value === 'streak';
+      document.getElementById('bot-streak-fields').style.display = isStreak ? 'grid' : 'none';
+      document.getElementById('bot-trigger-hint').textContent = isStreak
+        ? 'The bot watches live ticks and only enters once the chosen streak occurs.'
+        : "The bot places a trade, waits for it to resolve, then immediately looks for the next entry.";
+    });
+
+    document.getElementById('bot-run-btn').addEventListener('click', () => {
+      if (botState === 'running') {
+        stopBot(false, 'Bot stopped by user.');
+      } else {
+        startBot();
+      }
+    });
+
+    document.getElementById('bot-reset-btn').addEventListener('click', () => {
+      if (botState === 'running') stopBot(false, 'Bot stopped for reset.');
+      resetStats();
+    });
+  }
+
+  // ---------- Bot engine ----------
+
+  let botState = 'idle'; // 'idle' | 'running'
+  let botConfig = null;
+  let currentStake = 0;
+  let tickWs = null;
+  let lastQuote = null;
+  let streakCount = 0;
+  let statusPollTimer = null;
+  let openContractId = null;
+
+  let stats = { totalStake: 0, totalPayout: 0, runs: 0, won: 0, lost: 0, pnl: 0 };
+
+  function resetStats() {
+    stats = { totalStake: 0, totalPayout: 0, runs: 0, won: 0, lost: 0, pnl: 0 };
+    renderStats();
+    const log = document.getElementById('bot-log');
+    if (log) log.innerHTML = `<div class="log-empty">When you're ready to trade, hit Run.<br>Activity will show here.</div>`;
+  }
+
+  function renderStats() {
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    set('stat-total-stake', `${stats.totalStake.toFixed(2)} ${currency}`);
+    set('stat-total-payout', `${stats.totalPayout.toFixed(2)} ${currency}`);
+    set('stat-runs', stats.runs);
+    set('stat-won-lost', `${stats.won} / ${stats.lost}`);
+    const pnlEl = document.getElementById('stat-pnl');
+    if (pnlEl) {
+      pnlEl.textContent = `${stats.pnl >= 0 ? '+' : ''}${stats.pnl.toFixed(2)} ${currency}`;
+      pnlEl.className = 'stat-value mono ' + (stats.pnl > 0 ? 'profit' : stats.pnl < 0 ? 'loss' : '');
+    }
+  }
+
+  function logEvent(message, kind) {
+    const log = document.getElementById('bot-log');
+    if (!log) return;
+    if (log.querySelector('.log-empty')) log.innerHTML = '';
+    const time = new Date().toLocaleTimeString();
+    const div = document.createElement('div');
+    div.className = 'log-entry' + (kind ? ' ' + kind : '');
+    div.textContent = `[${time}] ${message}`;
+    log.prepend(div);
+  }
+
+  function setStatusUI(running, text) {
+    const line = document.getElementById('bot-status-line');
+    const label = document.getElementById('bot-status-text');
+    const btn = document.getElementById('bot-run-btn');
+    if (line) line.classList.toggle('running', running);
+    if (label) label.textContent = text;
+    if (btn) {
+      btn.className = 'run-btn ' + (running ? 'stop' : 'start');
+      btn.innerHTML = running ? '&#9632; Stop bot' : '&#9654; Run bot';
+    }
+    // Lock config fields while running so the strategy can't change mid-flight
+    ['bot-symbol','bot-contract-type','bot-duration','bot-base-stake','bot-trigger-type',
+     'bot-streak-direction','bot-streak-length','bot-loss-multiplier','bot-reset-on-win',
+     'bot-max-trades','bot-stop-profit','bot-stop-loss'].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.disabled = running;
+    });
+  }
+
+  function readConfig() {
+    const val = (id) => document.getElementById(id).value;
+    const checked = (id) => document.getElementById(id).checked;
+    return {
+      symbol: val('bot-symbol'),
+      contractType: val('bot-contract-type'),
+      duration: Number(val('bot-duration')),
+      baseStake: Number(val('bot-base-stake')),
+      triggerType: val('bot-trigger-type'),
+      streakDirection: val('bot-streak-direction'),
+      streakLength: Number(val('bot-streak-length')),
+      lossMultiplier: Number(val('bot-loss-multiplier')) || 1,
+      resetOnWin: checked('bot-reset-on-win'),
+      maxTrades: val('bot-max-trades') ? Number(val('bot-max-trades')) : null,
+      stopProfit: val('bot-stop-profit') ? Number(val('bot-stop-profit')) : null,
+      stopLoss: val('bot-stop-loss') ? Number(val('bot-stop-loss')) : null,
+    };
+  }
+
+  function startBot() {
+    botConfig = readConfig();
+    if (!botConfig.baseStake || botConfig.baseStake <= 0) {
+      logEvent('Cannot start: base stake must be greater than 0.', 'loss');
+      return;
+    }
+    currentStake = botConfig.baseStake;
+    botState = 'running';
+    setStatusUI(true, 'Running');
+    logEvent(`Bot started on ${botConfig.symbol} (${selectedType.toUpperCase()}).`);
+
+    if (botConfig.triggerType === 'streak') {
+      startTickWatcher();
+    } else {
+      attemptTrade();
+    }
+  }
+
+  function stopBot(silent, message) {
+    botState = 'idle';
+    if (tickWs) { try { tickWs.close(); } catch (e) {} tickWs = null; }
+    if (statusPollTimer) { clearInterval(statusPollTimer); statusPollTimer = null; }
+    openContractId = null;
+    streakCount = 0;
+    lastQuote = null;
+    setStatusUI(false, 'Idle');
+    if (!silent) logEvent(message || 'Bot stopped.');
+  }
+
+  function startTickWatcher() {
+    streakCount = 0;
+    lastQuote = null;
+    if (tickWs) { try { tickWs.close(); } catch (e) {} }
+    tickWs = new WebSocket(PROXY_WS_URL);
+    tickWs.onopen = () => tickWs.send(JSON.stringify({ ticks: botConfig.symbol, subscribe: 1 }));
+    tickWs.onmessage = (event) => {
+      if (botState !== 'running') return;
+      const data = JSON.parse(event.data);
+      if (data.msg_type !== 'tick' || !data.tick) return;
+      const quote = parseFloat(data.tick.quote);
+      if (lastQuote !== null) {
+        const direction = quote > lastQuote ? 'up' : quote < lastQuote ? 'down' : null;
+        if (direction === botConfig.streakDirection) {
+          streakCount += 1;
+        } else if (direction) {
+          streakCount = 0; // reset on any break in the streak
+        }
+        if (streakCount >= botConfig.streakLength) {
+          streakCount = 0;
+          logEvent(`Streak of ${botConfig.streakLength} ${botConfig.streakDirection === 'up' ? 'rises' : 'falls'} detected - entering trade.`);
+          if (tickWs) { try { tickWs.close(); } catch (e) {} tickWs = null; }
+          attemptTrade();
+        }
+      }
+      lastQuote = quote;
+    };
+    tickWs.onerror = () => {
+      if (botState === 'running') logEvent('Market data connection error - retrying.', 'loss');
+    };
+  }
+
+  async function attemptTrade() {
+    if (botState !== 'running') return;
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/trade`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          symbol: botConfig.symbol,
+          contractType: botConfig.contractType,
+          stake: currentStake,
+          duration: botConfig.duration,
+          durationUnit: 't',
+          currency,
+          accountType: selectedType,
+        }),
+      });
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        logEvent('Trade failed: ' + (data.message || data.error || 'Unknown error'), 'loss');
+        stopBot(true);
+        setStatusUI(false, 'Stopped - trade error');
+        return;
+      }
+
+      stats.totalStake += currentStake;
+      stats.runs += 1;
+      renderStats();
+      logEvent(`Bought ${botConfig.contractType === 'CALL' ? 'Rise' : 'Fall'} for ${currentStake.toFixed(2)} ${currency} (contract #${data.contractId}).`);
+      refreshAccounts();
+
+      openContractId = data.contractId;
+      if (statusPollTimer) clearInterval(statusPollTimer);
+      statusPollTimer = setInterval(pollOpenContract, 2000);
+    } catch (err) {
+      logEvent('Trade failed: could not reach server.', 'loss');
+      stopBot(true);
+      setStatusUI(false, 'Stopped - connection error');
+    }
+  }
+
+  async function pollOpenContract() {
+    if (!openContractId) return;
+    try {
+      const res = await fetch(
+        `${BACKEND_URL}/api/contract/${openContractId}/status?accountType=${selectedType}`,
+        { credentials: 'include' }
+      );
+      const data = await res.json();
+      if (!res.ok || data.error) return; // retry on next cycle
+
+      if (data.isSold) {
+        clearInterval(statusPollTimer);
+        statusPollTimer = null;
+        openContractId = null;
+        handleTradeResolved(Number(data.profit || 0));
+      }
+    } catch (err) { /* retry on next cycle */ }
+  }
+
+  function handleTradeResolved(profit) {
+    const isWin = profit >= 0;
+    stats.pnl += profit;
+    stats.totalPayout += Math.max(0, currentStake + profit);
+    if (isWin) stats.won += 1; else stats.lost += 1;
+    renderStats();
+    logEvent(
+      `Contract resolved: ${isWin ? '+' : ''}${profit.toFixed(2)} ${currency}.`,
+      isWin ? 'profit' : 'loss'
+    );
+    refreshAccounts();
+
+    // Apply money management rules for the next trade
+    if (!isWin) {
+      currentStake = currentStake * botConfig.lossMultiplier;
+    } else if (botConfig.resetOnWin) {
+      currentStake = botConfig.baseStake;
+    }
+
+    // Check stop conditions
+    if (botConfig.maxTrades && stats.runs >= botConfig.maxTrades) {
+      stopBot(false, `Stopped: reached max trades (${botConfig.maxTrades}).`);
+      return;
+    }
+    if (botConfig.stopProfit !== null && stats.pnl >= botConfig.stopProfit) {
+      stopBot(false, `Stopped: reached profit target (${botConfig.stopProfit} ${currency}).`);
+      return;
+    }
+    if (botConfig.stopLoss !== null && stats.pnl <= -Math.abs(botConfig.stopLoss)) {
+      stopBot(false, `Stopped: reached max loss (${botConfig.stopLoss} ${currency}).`);
+      return;
+    }
+    if (botState !== 'running') return;
+
+    // Otherwise, look for the next entry
+    if (botConfig.triggerType === 'streak') {
+      startTickWatcher();
+    } else {
+      attemptTrade();
+    }
+  }
+
+  fetch(`${BACKEND_URL}/me`, { credentials: 'include' })
+    .then((res) => res.json())
+    .then((meData) => {
+      if (!meData.loggedIn) { renderLoggedOut(); return; }
+      return fetch(`${BACKEND_URL}/api/accounts`, { credentials: 'include' })
+        .then((res) => res.json())
+        .then((accountData) => {
+          if (accountData.error) { renderLoggedOut(); return; }
+          accounts = accountData.data || [];
+          if (!accounts.length) { renderLoggedOut(); return; }
+          selectedType = accounts.some((a) => a.account_type === 'demo') ? 'demo' : accounts[0].account_type;
+          renderBuilder();
+        });
+    })
+    .catch(() => renderLoggedOut());
+</script>
+
+</body>
+</html>
